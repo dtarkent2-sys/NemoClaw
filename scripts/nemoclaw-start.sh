@@ -187,15 +187,23 @@ fix_openclaw_config
 openclaw plugins install /opt/nemoclaw > /dev/null 2>&1 || true
 
 # Re-inject fixed auth token AFTER plugins install (which overwrites config)
+# Must use mode: "token" explicitly for v2026.3.11 (see openclaw/openclaw#43909)
 if [ -n "${NEMOCLAW_AUTH_TOKEN:-}" ]; then
   python3 -c "
 import json, os
 path = os.path.expanduser('~/.openclaw/openclaw.json')
 cfg = json.load(open(path))
-cfg.setdefault('gateway', {})['auth'] = {'token': os.environ['NEMOCLAW_AUTH_TOKEN']}
+gw = cfg.setdefault('gateway', {})
+gw['bind'] = 'lan'
+gw['auth'] = {'mode': 'token', 'token': os.environ['NEMOCLAW_AUTH_TOKEN']}
+gw['controlUi'] = {
+    'dangerouslyDisableDeviceAuth': True,
+    'allowInsecureAuth': True,
+    'allowedOrigins': ['*'],
+}
 json.dump(cfg, open(path, 'w'), indent=2)
 os.chmod(path, 0o600)
-print(f'[config] fixed auth token injected')
+print('[config] fixed auth token injected with mode=token, bind=lan')
 "
 fi
 
