@@ -256,7 +256,7 @@ if [ ${#NEMOCLAW_CMD[@]} -gt 0 ]; then
   exec "${NEMOCLAW_CMD[@]}"
 fi
 
-start_auto_pair &
+# auto-pair disabled — dangerouslyDisableDeviceAuth handles it
 print_dashboard_urls
 
 # OpenClaw gateway only binds to 127.0.0.1. Use socat to proxy
