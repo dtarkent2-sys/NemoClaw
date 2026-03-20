@@ -49,6 +49,7 @@ gateway['controlUi'] = {
     'dangerouslyDisableDeviceAuth': True,
     'allowedOrigins': origins,
 }
+gateway['listenAddress'] = '0.0.0.0'
 gateway['trustedProxies'] = ['127.0.0.1', '::1', '0.0.0.0/0']
 
 with open(config_path, 'w') as f:
