@@ -38,9 +38,15 @@ chat_ui_url = os.environ.get('CHAT_UI_URL', 'http://127.0.0.1:18789')
 parsed = urlparse(chat_ui_url)
 chat_origin = f"{parsed.scheme}://{parsed.netloc}" if parsed.scheme and parsed.netloc else 'http://127.0.0.1:18789'
 local_origin = f'http://127.0.0.1:{os.environ.get("PUBLIC_PORT", "18789")}'
+railway_url = os.environ.get('RAILWAY_PUBLIC_DOMAIN', '')
 origins = [local_origin]
 if chat_origin not in origins:
     origins.append(chat_origin)
+if railway_url:
+    https_origin = f'https://{railway_url}'
+    if https_origin not in origins:
+        origins.append(https_origin)
+origins.append('*')
 
 gateway = cfg.setdefault('gateway', {})
 gateway['mode'] = 'local'
