@@ -42,7 +42,7 @@ RUN chmod +x /usr/local/bin/nemoclaw-start
 WORKDIR /sandbox
 
 # Pre-create volume mount point with correct ownership
-RUN mkdir -p /sandbox/data && chown sandbox:sandbox /sandbox/data
+RUN mkdir -p /data && chown sandbox:sandbox /data
 
 USER sandbox
 

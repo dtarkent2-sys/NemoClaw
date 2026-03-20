@@ -201,7 +201,7 @@ PYAUTOPAIR
 echo 'Setting up NemoClaw...'
 
 # Persistence: symlink sessions and memory to volume if mounted
-PERSIST_DIR="/sandbox/data"
+PERSIST_DIR="${DATA_DIR:-/data}"
 OC_DIR="/sandbox/.openclaw"
 if [ -d "$PERSIST_DIR" ]; then
   echo "[persist] Volume detected at $PERSIST_DIR"
