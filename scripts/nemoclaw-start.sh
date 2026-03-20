@@ -196,5 +196,20 @@ openclaw gateway run --port "${INTERNAL_PORT}" &
 GATEWAY_PID=$!
 sleep 2
 
+# Print token URL after gateway has generated its auth token
+TOKEN="$(python3 -c "
+import json, os
+try:
+    cfg = json.load(open(os.path.expanduser('~/.openclaw/openclaw.json')))
+    print(cfg.get('gateway', {}).get('auth', {}).get('token', ''))
+except: pass
+")"
+RAILWAY_DOMAIN="${RAILWAY_PUBLIC_DOMAIN:-}"
+if [ -n "$TOKEN" ] && [ -n "$RAILWAY_DOMAIN" ]; then
+  echo "[gateway] *** ACCESS URL: https://${RAILWAY_DOMAIN}/#token=${TOKEN} ***"
+elif [ -n "$TOKEN" ]; then
+  echo "[gateway] *** AUTH TOKEN: ${TOKEN} ***"
+fi
+
 echo "[proxy] socat forwarding 0.0.0.0:${PUBLIC_PORT} -> 127.0.0.1:${INTERNAL_PORT}"
 exec socat TCP-LISTEN:${PUBLIC_PORT},fork,reuseaddr,bind=0.0.0.0 TCP:127.0.0.1:${INTERNAL_PORT}
