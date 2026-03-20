@@ -44,7 +44,6 @@ if chat_origin not in origins:
 
 gateway = cfg.setdefault('gateway', {})
 gateway['mode'] = 'local'
-gateway['host'] = '0.0.0.0'
 gateway['controlUi'] = {
     'allowInsecureAuth': True,
     'dangerouslyDisableDeviceAuth': True,
@@ -183,4 +182,5 @@ fi
 start_auto_pair &
 print_dashboard_urls
 echo "[gateway] starting openclaw gateway (foreground, port ${PUBLIC_PORT})..."
+export HOST=0.0.0.0
 exec openclaw gateway run --port "${PUBLIC_PORT}"
