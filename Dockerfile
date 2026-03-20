@@ -40,6 +40,10 @@ COPY scripts/nemoclaw-start.sh /usr/local/bin/nemoclaw-start
 RUN chmod +x /usr/local/bin/nemoclaw-start
 
 WORKDIR /sandbox
+
+# Pre-create volume mount point with correct ownership
+RUN mkdir -p /sandbox/data && chown sandbox:sandbox /sandbox/data
+
 USER sandbox
 
 # Pre-create OpenClaw directories

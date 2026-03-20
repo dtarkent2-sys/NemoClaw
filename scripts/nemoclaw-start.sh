@@ -199,6 +199,27 @@ PYAUTOPAIR
 }
 
 echo 'Setting up NemoClaw...'
+
+# Persistence: symlink sessions and memory to volume if mounted
+PERSIST_DIR="/sandbox/data"
+OC_DIR="/sandbox/.openclaw"
+if [ -d "$PERSIST_DIR" ]; then
+  echo "[persist] Volume detected at $PERSIST_DIR"
+  # Fix ownership in case Railway mounted as root
+  if [ -w "$PERSIST_DIR" ] 2>/dev/null || true; then
+    for subdir in "agents/main/sessions" "memory" "logs"; do
+      mkdir -p "$PERSIST_DIR/$subdir"
+      # Remove image-baked dir and symlink to volume
+      rm -rf "$OC_DIR/$subdir"
+      mkdir -p "$(dirname "$OC_DIR/$subdir")"
+      ln -sfn "$PERSIST_DIR/$subdir" "$OC_DIR/$subdir"
+      echo "[persist] $subdir -> $PERSIST_DIR/$subdir"
+    done
+  fi
+else
+  echo "[persist] No volume at $PERSIST_DIR — state will not survive redeploys"
+fi
+
 openclaw doctor --fix > /dev/null 2>&1 || true
 write_auth_profile
 export CHAT_UI_URL PUBLIC_PORT
