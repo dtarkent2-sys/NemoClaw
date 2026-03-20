@@ -194,7 +194,7 @@ INTERNAL_PORT=18789
 echo "[gateway] starting openclaw gateway on 127.0.0.1:${INTERNAL_PORT}..."
 openclaw gateway run --port "${INTERNAL_PORT}" &
 GATEWAY_PID=$!
-sleep 2
+sleep 5
 
 # Print token URL after gateway has generated its auth token
 TOKEN="$(python3 -c "
@@ -209,6 +209,8 @@ if [ -n "$TOKEN" ] && [ -n "$RAILWAY_DOMAIN" ]; then
   echo "[gateway] *** ACCESS URL: https://${RAILWAY_DOMAIN}/#token=${TOKEN} ***"
 elif [ -n "$TOKEN" ]; then
   echo "[gateway] *** AUTH TOKEN: ${TOKEN} ***"
+else
+  echo "[gateway] WARNING: could not read auth token from config"
 fi
 
 echo "[proxy] socat forwarding 0.0.0.0:${PUBLIC_PORT} -> 127.0.0.1:${INTERNAL_PORT}"
