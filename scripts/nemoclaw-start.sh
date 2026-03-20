@@ -186,6 +186,19 @@ export CHAT_UI_URL PUBLIC_PORT
 fix_openclaw_config
 openclaw plugins install /opt/nemoclaw > /dev/null 2>&1 || true
 
+# Re-inject fixed auth token AFTER plugins install (which overwrites config)
+if [ -n "${NEMOCLAW_AUTH_TOKEN:-}" ]; then
+  python3 -c "
+import json, os
+path = os.path.expanduser('~/.openclaw/openclaw.json')
+cfg = json.load(open(path))
+cfg.setdefault('gateway', {})['auth'] = {'token': os.environ['NEMOCLAW_AUTH_TOKEN']}
+json.dump(cfg, open(path, 'w'), indent=2)
+os.chmod(path, 0o600)
+print(f'[config] fixed auth token injected')
+"
+fi
+
 if [ ${#NEMOCLAW_CMD[@]} -gt 0 ]; then
   exec "${NEMOCLAW_CMD[@]}"
 fi
