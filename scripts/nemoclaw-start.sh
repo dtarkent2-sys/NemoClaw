@@ -12,8 +12,8 @@
 set -euo pipefail
 
 NEMOCLAW_CMD=("$@")
-CHAT_UI_URL="${CHAT_UI_URL:-http://127.0.0.1:18789}"
-PUBLIC_PORT=18789
+CHAT_UI_URL="${CHAT_UI_URL:-http://0.0.0.0:${PORT:-18789}}"
+PUBLIC_PORT="${PORT:-18789}"
 
 fix_openclaw_config() {
   python3 - <<'PYCFG'
@@ -49,7 +49,7 @@ gateway['controlUi'] = {
     'dangerouslyDisableDeviceAuth': True,
     'allowedOrigins': origins,
 }
-gateway['trustedProxies'] = ['127.0.0.1', '::1']
+gateway['trustedProxies'] = ['127.0.0.1', '::1', '0.0.0.0/0']
 
 with open(config_path, 'w') as f:
     json.dump(cfg, f, indent=2)
@@ -179,7 +179,7 @@ if [ ${#NEMOCLAW_CMD[@]} -gt 0 ]; then
   exec "${NEMOCLAW_CMD[@]}"
 fi
 
-nohup openclaw gateway run > /tmp/gateway.log 2>&1 &
-echo "[gateway] openclaw gateway launched (pid $!)"
-start_auto_pair
+start_auto_pair &
 print_dashboard_urls
+echo "[gateway] starting openclaw gateway (foreground, port ${PUBLIC_PORT})..."
+exec openclaw gateway run --host 0.0.0.0 --port "${PUBLIC_PORT}"

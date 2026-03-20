@@ -68,5 +68,7 @@ os.chmod(path, 0o600)"
 RUN openclaw doctor --fix > /dev/null 2>&1 || true \
     && openclaw plugins install /opt/nemoclaw > /dev/null 2>&1 || true
 
-ENTRYPOINT ["/bin/bash"]
+EXPOSE 18789
+
+ENTRYPOINT ["/usr/local/bin/nemoclaw-start"]
 CMD []
