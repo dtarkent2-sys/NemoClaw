@@ -32,7 +32,26 @@ if os.path.exists(config_path):
 
 default_model = os.environ.get('NEMOCLAW_MODEL')
 if default_model:
-    cfg.setdefault('agents', {}).setdefault('defaults', {}).setdefault('model', {})['primary'] = default_model
+    cfg.setdefault('agents', {}).setdefault('defaults', {})['model'] = default_model
+
+# Inject Ollama cloud provider if API key is set
+ollama_api_key = os.environ.get('OLLAMA_API_KEY', '')
+if ollama_api_key:
+    providers = cfg.setdefault('models', {}).setdefault('providers', {})
+    providers['ollama'] = {
+        'api': 'ollama',
+        'baseUrl': 'https://ollama.com',
+        'apiKey': ollama_api_key,
+        'models': [
+            {
+                'id': 'nemotron-3-super:cloud',
+                'name': 'Nemotron 3 Super Cloud',
+                'contextWindow': 131072,
+                'maxTokens': 65536,
+                'cost': {'input': 0, 'output': 0, 'cacheRead': 0, 'cacheWrite': 0}
+            }
+        ]
+    }
 
 chat_ui_url = os.environ.get('CHAT_UI_URL', 'http://127.0.0.1:18789')
 parsed = urlparse(chat_ui_url)
