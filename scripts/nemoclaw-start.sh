@@ -57,6 +57,11 @@ gateway['controlUi'] = {
 }
 gateway['trustedProxies'] = ['127.0.0.1', '::1', '0.0.0.0/0']
 
+# Set a fixed auth token so it persists across deploys
+fixed_token = os.environ.get('NEMOCLAW_AUTH_TOKEN', '')
+if fixed_token:
+    gateway['auth'] = {'token': fixed_token}
+
 with open(config_path, 'w') as f:
     json.dump(cfg, f, indent=2)
 os.chmod(config_path, 0o600)
