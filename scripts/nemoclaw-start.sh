@@ -198,28 +198,29 @@ PYAUTOPAIR
   echo "[gateway] auto-pair watcher launched (pid $!)"
 }
 
-echo 'Setting up NemoClaw...'
-
-# Persistence: symlink sessions and memory to volume if mounted
-PERSIST_DIR="${DATA_DIR:-/data}"
-OC_DIR="/sandbox/.openclaw"
-if [ -d "$PERSIST_DIR" ]; then
-  echo "[persist] Volume detected at $PERSIST_DIR"
-  # Fix ownership in case Railway mounted as root
-  if [ -w "$PERSIST_DIR" ] 2>/dev/null || true; then
+# If running as root, fix volume perms and re-exec as sandbox
+if [ "$(id -u)" = "0" ]; then
+  PERSIST_DIR="${DATA_DIR:-/data}"
+  OC_DIR="/sandbox/.openclaw"
+  if [ -d "$PERSIST_DIR" ]; then
+    chown -R sandbox:sandbox "$PERSIST_DIR" 2>/dev/null || true
+    echo "[persist] Volume at $PERSIST_DIR, ownership fixed"
     for subdir in "agents/main/sessions" "memory" "logs"; do
       mkdir -p "$PERSIST_DIR/$subdir"
-      # Remove image-baked dir and symlink to volume
       rm -rf "$OC_DIR/$subdir"
       mkdir -p "$(dirname "$OC_DIR/$subdir")"
       ln -sfn "$PERSIST_DIR/$subdir" "$OC_DIR/$subdir"
       echo "[persist] $subdir -> $PERSIST_DIR/$subdir"
     done
+    chown -R sandbox:sandbox "$PERSIST_DIR" "$OC_DIR"
+  else
+    echo "[persist] No volume — state will not survive redeploys"
   fi
-else
-  echo "[persist] No volume at $PERSIST_DIR — state will not survive redeploys"
+  # Re-exec this script as sandbox user
+  exec su -s /bin/bash sandbox -c "HOME=/sandbox exec /usr/local/bin/nemoclaw-start"
 fi
 
+echo 'Setting up NemoClaw...'
 openclaw doctor --fix > /dev/null 2>&1 || true
 write_auth_profile
 export CHAT_UI_URL PUBLIC_PORT

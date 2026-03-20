@@ -41,9 +41,10 @@ RUN chmod +x /usr/local/bin/nemoclaw-start
 
 WORKDIR /sandbox
 
-# Pre-create volume mount point with correct ownership
-RUN mkdir -p /data && chown sandbox:sandbox /data
+# Pre-create volume mount point
+RUN mkdir -p /data
 
+# Build steps run as sandbox, but entrypoint runs as root to fix volume perms
 USER sandbox
 
 # Pre-create OpenClaw directories
@@ -74,5 +75,7 @@ RUN openclaw doctor --fix > /dev/null 2>&1 || true \
 
 EXPOSE 18789
 
+# Run entrypoint as root so it can fix volume permissions, then exec as sandbox
+USER root
 ENTRYPOINT ["/usr/local/bin/nemoclaw-start"]
 CMD []
