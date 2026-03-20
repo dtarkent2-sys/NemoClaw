@@ -218,11 +218,16 @@ gw['controlUi'] = {
     'allowedOrigins': ['*'],
 }
 gw['trustedProxies'] = ['127.0.0.1', '::1', '0.0.0.0/0']
-# Let gateway generate its own token - don't pre-set one
-gw.pop('auth', None)
+# Use fixed token from env if set, otherwise let gateway auto-generate
+fixed_token = os.environ.get('NEMOCLAW_AUTH_TOKEN', '')
+if fixed_token:
+    gw['auth'] = {'mode': 'token', 'token': fixed_token}
+    print(f'[config] gateway config written, using fixed auth token')
+else:
+    gw.pop('auth', None)
+    print('[config] gateway config written, auth token will be auto-generated')
 json.dump(cfg, open(path, 'w'), indent=2)
 os.chmod(path, 0o600)
-print('[config] gateway config written, auth token will be auto-generated')
 "
 
 if [ ${#NEMOCLAW_CMD[@]} -gt 0 ]; then
