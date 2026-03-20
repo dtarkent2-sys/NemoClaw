@@ -49,7 +49,6 @@ gateway['controlUi'] = {
     'dangerouslyDisableDeviceAuth': True,
     'allowedOrigins': origins,
 }
-gateway['listenAddress'] = '0.0.0.0'
 gateway['trustedProxies'] = ['127.0.0.1', '::1', '0.0.0.0/0']
 
 with open(config_path, 'w') as f:
@@ -182,6 +181,14 @@ fi
 
 start_auto_pair &
 print_dashboard_urls
-echo "[gateway] starting openclaw gateway (foreground, port ${PUBLIC_PORT})..."
-export HOST=0.0.0.0
-exec openclaw gateway run --port "${PUBLIC_PORT}"
+
+# OpenClaw gateway only binds to 127.0.0.1. Use socat to proxy
+# from 0.0.0.0:PUBLIC_PORT to the gateway on 127.0.0.1:18789.
+INTERNAL_PORT=18789
+echo "[gateway] starting openclaw gateway on 127.0.0.1:${INTERNAL_PORT}..."
+openclaw gateway run --port "${INTERNAL_PORT}" &
+GATEWAY_PID=$!
+sleep 2
+
+echo "[proxy] socat forwarding 0.0.0.0:${PUBLIC_PORT} -> 127.0.0.1:${INTERNAL_PORT}"
+exec socat TCP-LISTEN:${PUBLIC_PORT},fork,reuseaddr,bind=0.0.0.0 TCP:127.0.0.1:${INTERNAL_PORT}
