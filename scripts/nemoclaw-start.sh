@@ -186,26 +186,25 @@ export CHAT_UI_URL PUBLIC_PORT
 fix_openclaw_config
 openclaw plugins install /opt/nemoclaw > /dev/null 2>&1 || true
 
-# Re-inject fixed auth token AFTER plugins install (which overwrites config)
-# Must use mode: "token" explicitly for v2026.3.11 (see openclaw/openclaw#43909)
-if [ -n "${NEMOCLAW_AUTH_TOKEN:-}" ]; then
-  python3 -c "
+# Re-inject gateway config AFTER plugins install (which overwrites config)
+python3 -c "
 import json, os
 path = os.path.expanduser('~/.openclaw/openclaw.json')
 cfg = json.load(open(path))
 gw = cfg.setdefault('gateway', {})
 gw['bind'] = 'lan'
-gw['auth'] = {'mode': 'token', 'token': os.environ['NEMOCLAW_AUTH_TOKEN']}
 gw['controlUi'] = {
     'dangerouslyDisableDeviceAuth': True,
     'allowInsecureAuth': True,
     'allowedOrigins': ['*'],
 }
+gw['trustedProxies'] = ['127.0.0.1', '::1', '0.0.0.0/0']
+# Let gateway generate its own token - don't pre-set one
+gw.pop('auth', None)
 json.dump(cfg, open(path, 'w'), indent=2)
 os.chmod(path, 0o600)
-print('[config] fixed auth token injected with mode=token, bind=lan')
+print('[config] gateway config written, auth token will be auto-generated')
 "
-fi
 
 if [ ${#NEMOCLAW_CMD[@]} -gt 0 ]; then
   exec "${NEMOCLAW_CMD[@]}"
@@ -222,21 +221,31 @@ openclaw gateway run --port "${INTERNAL_PORT}" &
 GATEWAY_PID=$!
 sleep 5
 
-# Print token URL after gateway has generated its auth token
-TOKEN="$(python3 -c "
+# Get the proper dashboard URL from openclaw itself
+DASHBOARD_URL="$(openclaw dashboard --no-open 2>/dev/null || echo '')"
+if [ -n "$DASHBOARD_URL" ]; then
+  echo "[gateway] *** OPENCLAW DASHBOARD URL: ${DASHBOARD_URL} ***"
+  # Extract token from the URL
+  TOKEN="$(echo "$DASHBOARD_URL" | grep -oP '#token=\K[^&]*' || echo '')"
+  if [ -n "$TOKEN" ]; then
+    RAILWAY_DOMAIN="${RAILWAY_PUBLIC_DOMAIN:-}"
+    if [ -n "$RAILWAY_DOMAIN" ]; then
+      echo "[gateway] *** ACCESS URL: https://${RAILWAY_DOMAIN}/#token=${TOKEN} ***"
+    fi
+  fi
+else
+  echo "[gateway] WARNING: openclaw dashboard --no-open returned empty"
+  # Fallback: read token from config
+  TOKEN="$(python3 -c "
 import json, os
 try:
     cfg = json.load(open(os.path.expanduser('~/.openclaw/openclaw.json')))
     print(cfg.get('gateway', {}).get('auth', {}).get('token', ''))
 except: pass
 ")"
-RAILWAY_DOMAIN="${RAILWAY_PUBLIC_DOMAIN:-}"
-if [ -n "$TOKEN" ] && [ -n "$RAILWAY_DOMAIN" ]; then
-  echo "[gateway] *** ACCESS URL: https://${RAILWAY_DOMAIN}/#token=${TOKEN} ***"
-elif [ -n "$TOKEN" ]; then
-  echo "[gateway] *** AUTH TOKEN: ${TOKEN} ***"
-else
-  echo "[gateway] WARNING: could not read auth token from config"
+  if [ -n "$TOKEN" ]; then
+    echo "[gateway] *** AUTH TOKEN (from config): ${TOKEN} ***"
+  fi
 fi
 
 echo "[proxy] socat forwarding 0.0.0.0:${PUBLIC_PORT} -> 127.0.0.1:${INTERNAL_PORT}"
